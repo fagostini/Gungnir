@@ -31,5 +31,5 @@
 *.out
 *.app
 
-# Test folder
-test/*
+# A test file
+extra/test.fa

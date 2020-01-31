@@ -1,8 +1,11 @@
+// Include C++ header files
 #include <iostream>
 #include <fstream>
 #include <math.h>
 #include <string.h>
-#include <vector>
+// CUDA libraries.
+#include <cuda.h>
+#include <cuda_runtime.h>
 
 #define BLOCKSIZE 1024
 
@@ -10,19 +13,6 @@
 
 #define MAXLEN 40
 #define MISMATCH 9
-
-/*
-Compile:
-   nvcc -arch compute_61 -o hammingFastaGPU hammingFasta.cu
-
-Test: 
-   ./hammingFastaGPU query.fa
-
-   Test (memcheck)
-   nvprof --print-gpu-trace --device-buffer-size on ./hammingFastaGPU test1k.fa test1k.fa
-   nvprof --print-gpu-trace --device-buffer-size on ./hammingFastaGPU test10k.fa test10k.fa
-   nvprof --print-gpu-trace --device-buffer-size on ./hammingFastaGPU test100k.fa test100k.fa
-*/
 
 inline
 cudaError_t checkCuda(cudaError_t result){
