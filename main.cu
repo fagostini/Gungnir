@@ -7,7 +7,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-#define BLOCKSIZE 1024
+#define BLOCKSIZE 32
 
 #define MAXREF 250000000
 
@@ -25,49 +25,19 @@ cudaError_t checkCuda(cudaError_t result){
   return result;
 }
 
-/* Code from https://www.geeksforgeeks.org/hamming-distance-two-strings */
 __global__
-void distance_hamming( char *str, size_t p_s, int *dist, size_t p_d, int N){
-    int index =  blockIdx.x * blockDim.x + threadIdx.x;
-    int stride = blockDim.x * gridDim.x;
+void distance_hamming( char *str, size_t p_s, char *ref, size_t len, int *dist, size_t p_d, int N){
+    int Xindex =  blockIdx.x * blockDim.x + threadIdx.x;
+    int Xstride = blockDim.x * gridDim.x;
+    int Yindex =  blockIdx.y * blockDim.y + threadIdx.y;
+    int Ystride = blockDim.y * gridDim.y;
     int i, ii;
     // printf("\n%d %d", index, stride);
-    if (index < N ){
-        for(i=index; i<N; i+=stride){
-            // printf("\n%d %.40s", i, &str[i*p_s]);
-            int* row_dis = (int*)((char*)dist + i*p_d);
-            for(ii=0; ii<N; ii++){
-                int count = 0;
-                for(int pos=0; pos<p_s; pos++){
-                    if( str[i*p_s+pos] == '\0' )
-                        break;
-                    // printf("%c", str[i*p_s+pos]);
-                    if( str[i*p_s+pos] != str[ii*p_s+pos] )
-                        count++; 
-                }
-                // printf("   %d", count);
-                if( count <= MISMATCH ){
-                    row_dis[count] += 1;
-                    // printf("%d %d %d\n", i, count, row_dis[count]);
-                }
-            }
-            // printf("\n");
-        }
-    }
-    __syncthreads();
-}
-
-__global__
-void distance_hamming2( char *str, size_t p_s, char *ref, size_t len, int *dist, size_t p_d, int N){
-    int index =  blockIdx.x * blockDim.x + threadIdx.x;
-    int stride = blockDim.x * gridDim.x;
-    int i, ii;
-    // printf("\n%d %d", index, stride);
-    if (index < N ){
-        for(i=index; i<N; i+=stride){
+    if(Xindex < N && Xindex < (len-MAXLEN+1) ){
+        for(i=Xindex; i<N; i+=Xstride){
             // printf("\n%d %.40s %s", i, &str[i*p_s], &ref[0]);
             int* row_dis = (int*)((char*)dist + i*p_d);
-            for(ii=0; ii<(len-MAXLEN+1); ii++){
+            for(ii=Yindex; ii<(len-MAXLEN+1); ii+=Ystride){
                 // printf("\n%d %.40s %.40s", i, &str[i*p_s], &ref[ii]);
                 int count = 0;
                 for(int pos=0; pos<p_s; pos++){
@@ -84,7 +54,7 @@ void distance_hamming2( char *str, size_t p_s, char *ref, size_t len, int *dist,
                     // printf("%d %d %d\n", i, count, row_dis[count]);
                 }
             }
-            // printf("\n");
+        // printf("\n");
         }
     }
     // __syncthreads();
@@ -277,12 +247,15 @@ int main( int argc, char **argv ){
     checkCuda( cudaMemcpy(GPU_ref, reference, sizeof(char)*ref_length, cudaMemcpyHostToDevice) );
     printf("OK\n");
 
-    int blockSize = N < BLOCKSIZE ? N : BLOCKSIZE;
-    int numBlocks = (N + blockSize - 1) / blockSize;
+    // int blockSize = N < BLOCKSIZE ? N : BLOCKSIZE;
+    // int numBlocks = (N + blockSize - 1) / blockSize;
+
+    dim3 block(BLOCKSIZE, BLOCKSIZE);
+    dim3 grid ( (N + BLOCKSIZE - 1 ) / BLOCKSIZE, (N + BLOCKSIZE - 1) / BLOCKSIZE );
 
     printf("Running kernel operations... ");
-    // distance_hamming<<<numBlocks, blockSize>>>(GPU_seq, pitch_seq, GPU_dis, pitch_dis, N);
-    distance_hamming2<<<numBlocks, blockSize>>>(GPU_seq, pitch_seq, GPU_ref, pitch_ref, GPU_dis, pitch_dis, N);
+    // distance_hamming<<<numBlocks, blockSize>>>(GPU_seq, pitch_seq, GPU_ref, pitch_ref, GPU_dis, pitch_dis, N);
+    distance_hamming<<<grid, block>>>(GPU_seq, pitch_seq, GPU_ref, pitch_ref, GPU_dis, pitch_dis, N);
     printf("OK\n");
 
     // Wait for GPU to finish before accessing on host
