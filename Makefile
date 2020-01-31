@@ -58,8 +58,8 @@ OBJS = $(OBJ_DIR)/main.o # $(OBJ_DIR)/cuda_kernel.o
 
 # Test files:
 TEST1 = $(TEST_DIR)/test.fa $(TEST_DIR)/test1k.fa
-TEST2 = $(TEST_DIR)/test.fa $(TEST_DIR)/test10k.fa
-TEST3 = $(TEST_DIR)/test.fa $(TEST_DIR)/test100k.fa
+TEST2 = $(TEST_DIR)/test1k.fa $(TEST_DIR)/test10k.fa
+TEST3 = $(TEST_DIR)/test1k.fa $(TEST_DIR)/test100k.fa
 
 # Result file
 RESULT = results.tsv
