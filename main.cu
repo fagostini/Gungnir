@@ -9,7 +9,7 @@
 
 #define BLOCKSIZE 32
 
-#define MAXREF 250000000
+#define MAXREF 3000000000
 
 #define MAXLEN 40
 #define MISMATCH 9
@@ -39,13 +39,12 @@ void distance_hamming( char *str, size_t p_s, char *ref, size_t len, int *dist, 
             int* row_dis = (int*)((char*)dist + i*p_d);
             for(ii=Yindex; ii<(len-MAXLEN+1); ii+=Ystride){
                 // printf("\n%d %.40s %.40s", i, &str[i*p_s], &ref[ii]);
-                int count = 0;
-                for(int pos=0; pos<p_s; pos++){
+                int pos, count = 0;
+                for(pos=0; pos<p_s; pos++){
                     if( str[i*p_s+pos] == '\0' )
                         break;
                     // printf("%c", str[i*p_s+pos]);
-                    if( str[i*p_s+pos] != ref[ii+pos] )
-                        count++; 
+                    count += ( str[i*p_s+pos] != ref[ii+pos] );
                 }
                 // printf("\n%d %.40s %.40s %d", i, &str[i*p_s], &ref[ii], count);
                 // printf("   %d", count);
@@ -214,26 +213,32 @@ int main( int argc, char **argv ){
     printf("OK\n");
 
     printf("Reading reference the input file... ");
-    int ref_length = 0;
-    ref.get(c);
-    do{
+    int ref_index = 0, ref_length = 0, n = 0;
+    while( ref.get(c) && !ref.eof() ){
         if( c == '>' ){
-            do{
+            while( c != '\n' ){
                 ref.get(c);
-            } while( c != '\n' );
+            }
         } else {
             do{
-                reference[ref_length++] = c;
+                if( c == 'N'){
+                    n += 1;
+                } else {
+                    n = 0;
+                }
+                if( n < (MAXLEN+1) ){
+                    reference[ref_length++] = toupper(c);
+                }
                 ref.get(c);
             } while( c != '\n' || ref_length > (MAXREF+1) );
         }
-        ref.get(c);
-    } while( !ref.eof() );
+    }
     reference[ref_length] = '\0';
     ref.close();
     printf("OK\n");
 
     // printf("%s\n", reference);
+    printf("Effective refence length: %d\n", ref_length);
 
     char *GPU_ref;
     size_t pitch_ref = sizeof(char)*ref_length;
@@ -272,7 +277,7 @@ int main( int argc, char **argv ){
     for(i = 0; i < N; i++){
         for(int ii=0; ii<(MAXLEN+1); ii++){
             if( ids[i*(MAXLEN+1)+ii] == '\0'){
-                output << '\t';
+                output << ' ';
                 break;
             }
             output << ids[i*(MAXLEN+1)+ii];
@@ -283,7 +288,7 @@ int main( int argc, char **argv ){
             output << seq[i*(MAXLEN+1)+ii];
         }
         for(int ii=0; ii<(MISMATCH+1); ii++){
-            output << '\t' << dis[i*(MISMATCH+1)+ii];
+            output << ' ' << dis[i*(MISMATCH+1)+ii];
         }
         output << '\n';
     }
