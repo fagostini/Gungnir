@@ -57,7 +57,7 @@ EXE = runHamming
 OBJS = $(OBJ_DIR)/main.o # $(OBJ_DIR)/cuda_kernel.o
 
 # Test files:
-TEST1 = $(TEST_DIR)/test.fa $(TEST_DIR)/test1k.fa
+TEST1 = $(TEST_DIR)/test.fa $(TEST_DIR)/test.fa
 TEST2 = $(TEST_DIR)/test1k.fa $(TEST_DIR)/test10k.fa
 TEST3 = $(TEST_DIR)/test1k.fa $(TEST_DIR)/test100k.fa
 
@@ -104,21 +104,25 @@ $(OBJ_DIR)/%.o : %.cu
 
 all: $(EXE)
 
+.PHONY : all
+
 # Clean objects in object directory.
 clean:
-	@rm $(OBJS) $(EXE)
+	@rm -f $(OBJS) $(EXE)
 
-# Clean objects in object directory.
-deepclean:
-	@rm $(OBJS) $(EXE) $(RESULT) $(LOG) $(NVPROF_OUT) $(NVPROF_LOG)
+# Clean objects and test outputs.
+cleanall:
+	@rm -f $(OBJS) $(EXE) $(RESULT) $(LOG) $(NVPROF_OUT) $(NVPROF_LOG)
+
+.PHONY : clean cleanall
 
 # Test options
-testall: test1k test10k test100k
+testall: test test10k test100k
 
 # Make test #1:
-test1k: $(EXE) $(TEST1)
+test: $(EXE) $(TEST1)
 	@./$(EXE) $(TEST1) > $(LOG)
-	@echo "Test 1k PASSED" || echo "Test 1k FAILED"
+	@echo "Test PASSED" || echo "Test FAILED"
 
 # Make test #2:
 test10k: $(EXE) $(TEST2)
@@ -130,7 +134,11 @@ test100k: $(EXE) $(TEST3)
 	@./$(EXE) $(TEST3) > $(LOG)
 	@echo "Test 100k PASSED" || echo "Test 100k FAILED"
 
+.PHONY : testall test test10k test100k
+
 # Make test #2:
 profile: $(EXE) $(TEST2)
 	@$(NVPROF) $(NVPROF_FLAGS) -o $(NVPROF_OUT) ./$(EXE) $(TEST2) > $(NVPROF_LOG)
 	@echo "Profiling COMPLETED" || echo "Profiling FAILED"
+
+.PHONY : profile
