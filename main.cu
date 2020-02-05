@@ -11,7 +11,7 @@
 
 #define MAXREF 3000000000
 
-#define MAXLEN 40
+#define MAXLEN 100
 #define MISMATCH 9
 
 inline
@@ -41,7 +41,7 @@ void distance_hamming( char *str, size_t p_s, char *ref, size_t len, int *dist, 
                 // printf("\n%d %.40s %.40s", i, &str[i*p_s], &ref[ii]);
                 int pos, count = 0;
                 for(pos=0; pos<p_s; pos++){
-                    if( str[i*p_s+pos] == '\0' )
+                    if( str[i*p_s+pos] == '\0' || count > MISMATCH )
                         break;
                     // printf("%c", str[i*p_s+pos]);
                     count += ( str[i*p_s+pos] != ref[ii+pos] );
@@ -213,7 +213,7 @@ int main( int argc, char **argv ){
     printf("OK\n");
 
     printf("Reading reference the input file... ");
-    int ref_index = 0, ref_length = 0, n = 0;
+    int ref_length = 0, n = 0;
     while( ref.get(c) && !ref.eof() ){
         if( c == '>' ){
             while( c != '\n' ){
