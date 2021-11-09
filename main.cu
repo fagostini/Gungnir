@@ -9,7 +9,7 @@
 
 #define BLOCKSIZE 32
 
-#define MAXREF 3000000000
+#define MAXREF 3210000000
 
 #define MAXLEN 100
 #define MISMATCH 9
